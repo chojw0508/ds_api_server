@@ -4,6 +4,8 @@ from sqlalchemy.engine import reflection
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import QueuePool
 from pymilvus import connections, Collection, FieldSchema, CollectionSchema, DataType, utility, db
+from pymongo import MongoClient
+import redis
 from core.messages import ServerMessages
 
 logger = logging.getLogger("uvicorn.error")
@@ -19,9 +21,13 @@ class InitializeDB:
         mariadb_config (MariaDBConfig): MariaDB 관련 설정.
         data_config (DataConfig): 데이터 컬럼 및 컬렉션 설정.
         milvus_config (MilvusConfig): Milvus 관련 설정.
+        redis_config (RedisConfig): Redis 설정.
+        mongodb_config (MongoDBConfig): MongoDB 설정.
         engine (Engine): SQLAlchemy 엔진 객체.
         mariadb_connection (Connection): MariaDB 연결 객체.
         session (Session): SQLAlchemy 세션 팩토리.
+        redis_client (redis.Redis): Redis 클라이언트.
+        mongo_client (MongoClient): MongoDB 클라이언트.
     """
 
     def __init__(self, config):
@@ -34,10 +40,14 @@ class InitializeDB:
         self.mariadb_config = config.mariadb
         self.data_config = config.data
         self.milvus_config = config.milvus
+        self.redis_config = config.redis
+        self.mongodb_config = config.mongodb
 
         self.engine = None
         self.mariadb_connection = None
         self.session = None
+        self.redis_client = None
+        self.mongo_client = None
 
         # MariaDB 존재 여부 확인 및 생성
         try:
@@ -97,6 +107,31 @@ class InitializeDB:
             logger.info(ServerMessages.MILVUS_CONNECT_SUCCESS)
         except Exception as e:
             logger.error(ServerMessages.MILVUS_CONNECT_ERROR + f"{e}")
+
+        # Redis 연결
+        try:
+            self.redis_client = redis.Redis(
+                host=self.redis_config.host,
+                port=self.redis_config.port,
+                db=self.redis_config.db,
+                password=self.redis_config.password,
+                decode_responses=True,
+            )
+            self.redis_client.ping()
+            logger.info(ServerMessages.REDIS_CONNECT_SUCCESS)
+        except Exception as e:
+            logger.error(ServerMessages.REDIS_CONNECT_ERROR + f"{e}")
+
+        # MongoDB 연결
+        try:
+            self.mongo_client = MongoClient(
+                host=self.mongodb_config.host,
+                port=self.mongodb_config.port,
+            )
+            self.mongo_client[self.mongodb_config.database][self.mongodb_config.collection]
+            logger.info(ServerMessages.MONGODB_CONNECT_SUCCESS)
+        except Exception as e:
+            logger.error(ServerMessages.MONGODB_CONNECT_ERROR + f"{e}")
 
 
     def create_mariadb_table(self):
