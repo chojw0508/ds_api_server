@@ -48,7 +48,7 @@ class ChatBot:
         self.mongo.insert_one(doc)
         self.redis.rpush(f"{self.redis_prefix}{session_id}", json.dumps({"role": role, "content": content}))
 
-    def chat(self, session_id: str, user_message: str, use_rag: bool, collection: str, top_k: int):
+    def chat_with_session(self, session_id: str, user_message: str, use_rag: bool, collection: str, top_k: int):
         try:
             if not self.redis.exists(session_id):
                 self.redis.set(session_id, "1")
@@ -73,6 +73,28 @@ class ChatBot:
             self._save_message(session_id, "user", user_message)
             self._save_message(session_id, "assistant", answer)
 
+            return {"answer": answer}
+        except Exception as e:
+            logger.error(ServerMessages.CHAT_REQUEST_ERROR + f"{e}")
+            raise HTTPException(status_code=500, detail=ServerMessages.CHAT_REQUEST_ERROR)
+
+    def chat_test(self, messages: list[dict], use_rag: bool, collection: str, top_k: int):
+        """사용자 정보 없이 대화 메시지 목록만으로 답변을 생성합니다."""
+        try:
+            conv = messages.copy()
+            if use_rag and messages:
+                user_msg = messages[-1].get("content", "")
+                embedded = self.embedding.get_embeddings([user_msg])
+                result = milvus_search(collection, "COSINE", 10, embedded, top_k, ["text"])
+                docs = "\n".join(hit.entity.get("text", "") for hit in result[0])
+                if docs:
+                    conv.append({"role": "system", "content": f"Reference:\n{docs}"})
+
+            response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=conv
+            )
+            answer = response.choices[0].message.content
             return {"answer": answer}
         except Exception as e:
             logger.error(ServerMessages.CHAT_REQUEST_ERROR + f"{e}")

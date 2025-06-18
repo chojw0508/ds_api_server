@@ -109,10 +109,26 @@ async def api_chat(
     collection: str = Body("detailed_summary"),
     top_k: int = Body(1)
 ):
-    """ChatGPT 기반 대화 API."""
-    return chat_bot.chat(
+    """사용자 세션을 기반으로 하는 챗봇 API."""
+    return chat_bot.chat_with_session(
         session_id=session_id,
         user_message=message,
+        use_rag=use_rag,
+        collection=collection,
+        top_k=top_k,
+    )
+
+
+@app.post("/chat_test", operation_id="chat test")
+async def api_chat_test(
+    messages: list[dict] = Body(...),
+    use_rag: bool = Body(False),
+    collection: str = Body("detailed_summary"),
+    top_k: int = Body(1)
+):
+    """사용자 정보 없이 메시지 목록으로 대화를 테스트하는 API."""
+    return chat_bot.chat_test(
+        messages=messages,
         use_rag=use_rag,
         collection=collection,
         top_k=top_k,
