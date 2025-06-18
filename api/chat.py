@@ -1,4 +1,5 @@
 import os
+import json
 import logging
 from datetime import datetime
 from fastapi import HTTPException
@@ -19,19 +20,33 @@ class ChatBot:
         self.initialize_db = initialize_db
         self.redis = initialize_db.redis_client
         self.mongo = initialize_db.mongo_client[config.mongodb.database][config.mongodb.collection]
+        self.redis_prefix = "history:"
         self.embedding = TextEmbeddings()
         openai.api_key = os.getenv("OPENAI_API_KEY")
 
     def _get_history(self, session_id: str):
-        return list(self.mongo.find({"session_id": session_id}).sort("timestamp", 1))
+        """Retrieve conversation history from Redis or MongoDB."""
+        redis_key = f"{self.redis_prefix}{session_id}"
+        if self.redis.exists(redis_key):
+            data = self.redis.lrange(redis_key, 0, -1)
+            return [json.loads(item) for item in data]
+
+        records = list(self.mongo.find({"session_id": session_id}).sort("timestamp", 1))
+        for rec in records:
+            msg = {"role": rec["role"], "content": rec["content"]}
+            self.redis.rpush(redis_key, json.dumps(msg))
+        return records
 
     def _save_message(self, session_id: str, role: str, content: str):
-        self.mongo.insert_one({
+        """Save a chat message to MongoDB and Redis."""
+        doc = {
             "session_id": session_id,
             "role": role,
             "content": content,
-            "timestamp": datetime.utcnow()
-        })
+            "timestamp": datetime.utcnow(),
+        }
+        self.mongo.insert_one(doc)
+        self.redis.rpush(f"{self.redis_prefix}{session_id}", json.dumps({"role": role, "content": content}))
 
     def chat(self, session_id: str, user_message: str, use_rag: bool, collection: str, top_k: int):
         try:
