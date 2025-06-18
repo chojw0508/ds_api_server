@@ -59,3 +59,6 @@ class ServerMessages:
     REDIS_CONNECT_ERROR = "❌ Redis 연결 실패"
     MONGODB_CONNECT_SUCCESS = "✅ MongoDB 연결"
     MONGODB_CONNECT_ERROR = "❌ MongoDB 연결 실패"
+
+    # Chat 관련 메시지
+    CHAT_REQUEST_ERROR = "❌ ChatGPT 요청 실패"

@@ -9,6 +9,7 @@ from core.initialize_db import InitializeDB
 from api.get_info import GetInfo
 from api.insert_data import InsertData
 from api.vector_search import VectorSearch
+from api.chat import ChatBot
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -21,6 +22,7 @@ initialize_db = InitializeDB(config)
 get_info = GetInfo(config)
 insert_data = InsertData(config, initialize_db)
 vector_search = VectorSearch(config, initialize_db)
+chat_bot = ChatBot(config, initialize_db)
 
 # CORS 설정: 개발 편의를 위해 모든 origin 허용
 app.add_middleware(
@@ -96,6 +98,24 @@ async def api_search(
         collection_names=collection_names,
         query_text=query,
         top_k=top_k
+    )
+
+
+@app.post("/chat", operation_id="chat")
+async def api_chat(
+    session_id: str = Body(...),
+    message: str = Body(...),
+    use_rag: bool = Body(False),
+    collection: str = Body("detailed_summary"),
+    top_k: int = Body(1)
+):
+    """ChatGPT 기반 대화 API."""
+    return chat_bot.chat(
+        session_id=session_id,
+        user_message=message,
+        use_rag=use_rag,
+        collection=collection,
+        top_k=top_k,
     )
 
 mcp = FastApiMCP(app)
