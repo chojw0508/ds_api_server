@@ -1,4 +1,5 @@
 # core/config.py
+import os
 
 class MariaDBConfig:
     """MariaDB 관련 설정을 구성하는 클래스입니다.
@@ -17,17 +18,17 @@ class MariaDBConfig:
     """
 
     def __init__(self):
-        self.host = "host.docker.internal"
-        self.port = 3306
-        self.user = "root"
-        self.password = "testdb"
-        self.database = "headhunter"
-        self.table = "person_info"
+        self.host = os.getenv("DB_HOST", "host.docker.internal")
+        self.port = int(os.getenv("DB_PORT", 3306))
+        self.user = os.getenv("DB_USER", "root")
+        self.password = os.getenv("DB_PASSWORD", "testdb")
+        self.database = os.getenv("DB_DATABASE", "headhunter")
+        self.table = os.getenv("DB_TABLE", "person_info")
 
-        self.pool_size = 5
-        self.max_overflow = 10
-        self.pool_timeout = 30
-        self.pool_recycle = 1800
+        self.pool_size = int(os.getenv("DB_POOL_SIZE", 5))
+        self.max_overflow = int(os.getenv("DB_MAX_OVERFLOW", 10))
+        self.pool_timeout = int(os.getenv("DB_POOL_TIMEOUT", 30))
+        self.pool_recycle = int(os.getenv("DB_POOL_RECYCLE", 1800))
 
 
 class MilvusConfig:
@@ -41,10 +42,10 @@ class MilvusConfig:
     """
 
     def __init__(self):
-        self.host = "host.docker.internal"
-        self.port = 19530
-        self.api_port = 9091
-        self.database = "base_model"
+        self.host = os.getenv("MILVUS_HOST", "host.docker.internal")
+        self.port = int(os.getenv("MILVUS_PORT", 19530))
+        self.api_port = int(os.getenv("MILVUS_API_PORT", 9091))
+        self.database = os.getenv("MILVUS_DATABASE", "base_model")
 
 
 class EmbeddingConfig:
@@ -57,9 +58,9 @@ class EmbeddingConfig:
     """
 
     def __init__(self):
-        self.host = "host.docker.internal"
-        self.port = 3201
-        self.batch_size = 32
+        self.host = os.getenv("EMBEDDING_HOST", "host.docker.internal")
+        self.port = int(os.getenv("EMBEDDING_PORT", 3201))
+        self.batch_size = int(os.getenv("EMBEDDING_BATCH_SIZE", 32))
 
 
 class DataConfig:
@@ -92,6 +93,40 @@ class DataConfig:
         ]
 
 
+class RedisConfig:
+    """Redis 서버 설정을 구성하는 클래스입니다.
+
+    Attributes:
+        host (str): Redis 호스트 주소.
+        port (int): Redis 포트 번호.
+        db (int): 기본 데이터베이스 번호.
+        password (str or None): 접속 비밀번호.
+    """
+
+    def __init__(self):
+        self.host = os.getenv("REDIS_HOST", "host.docker.internal")
+        self.port = int(os.getenv("REDIS_PORT", 6379))
+        self.db = int(os.getenv("REDIS_DB", 0))
+        self.password = os.getenv("REDIS_PASSWORD")
+
+
+class MongoDBConfig:
+    """MongoDB 서버 설정을 구성하는 클래스입니다.
+
+    Attributes:
+        host (str): MongoDB 호스트 주소.
+        port (int): MongoDB 포트 번호.
+        database (str): 기본 데이터베이스 이름.
+        collection (str): 기본 컬렉션 이름.
+    """
+
+    def __init__(self):
+        self.host = os.getenv("MONGODB_HOST", "host.docker.internal")
+        self.port = int(os.getenv("MONGODB_PORT", 27017))
+        self.database = os.getenv("MONGODB_DATABASE", "chatbot")
+        self.collection = os.getenv("MONGODB_COLLECTION", "messages")
+
+
 class AppConfig:
     """전체 애플리케이션 설정을 묶는 구성 클래스입니다.
 
@@ -109,3 +144,6 @@ class AppConfig:
         self.milvus = MilvusConfig()
         self.embedding = EmbeddingConfig()
         self.data = DataConfig()
+        self.redis = RedisConfig()
+        self.mongodb = MongoDBConfig()
+

@@ -53,3 +53,12 @@ class ServerMessages:
     # 검색 오류 메시지
     MILVUS_SEARCH_ERROR = "❌ 밀버스 검색 실패"
     MARIA_SEARCH_ERROR = "❌ MariaDB 검색 실패"
+
+    # Redis 및 MongoDB 메시지
+    REDIS_CONNECT_SUCCESS = "✅ Redis 연결"
+    REDIS_CONNECT_ERROR = "❌ Redis 연결 실패"
+    MONGODB_CONNECT_SUCCESS = "✅ MongoDB 연결"
+    MONGODB_CONNECT_ERROR = "❌ MongoDB 연결 실패"
+
+    # Chat 관련 메시지
+    CHAT_REQUEST_ERROR = "❌ ChatGPT 요청 실패"
